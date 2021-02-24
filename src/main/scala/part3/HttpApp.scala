@@ -1,4 +1,4 @@
-package part1
+package part3
 
 import caliban.Http4sAdapter
 import org.http4s.implicits._
@@ -8,7 +8,8 @@ import org.http4s.server.middleware.CORS
 import zio.console.putStrLn
 import zio.interop.catz._
 import zio.interop.catz.implicits._
-import zio.{ ExitCode, Task, ZIO }
+import zio.{ExitCode, Task, ZIO}
+
 
 object HttpApp extends CatsApp {
 
