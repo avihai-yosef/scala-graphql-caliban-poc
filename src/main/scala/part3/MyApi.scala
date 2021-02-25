@@ -2,17 +2,12 @@ package part3
 
 import java.time.Instant
 
-import caliban.CalibanError.ExecutionError
 import caliban.GraphQL.graphQL
 import caliban.RootResolver
-import caliban.schema.{ArgBuilder, Schema}
-import part3.DBService.{EventServiceImpl, PersonService}
-import part3.Data.{EventId, EventType, Participant, ParticipantId}
-import zio.{Chunk, UIO}
+import part3.DBService.EventServiceImpl
+import part3.Data._
 import zio.query.{DataSource, Request, ZQuery}
-//import caliban.schema.{Schema}
-
-import part3.Data.Event
+import zio.{Chunk, UIO}
 
 object MyApi {
 
@@ -48,18 +43,21 @@ object MyApi {
 
     def getPerson(id: ParticipantId): MyQuery[Participant] = ZQuery.fromRequest(GetPerson(id))(PersonDataSource)
 
+    def getPersons(ids: List[ParticipantId]): MyQuery[List[Participant]] = ZQuery.foreachPar(ids)(getPerson)
 
     def getEvent(id: EventId): MyQuery[EventView] = {
 
       ZQuery
         .fromEffect(EventServiceImpl
           .getEvent(id))
-        .map(event => EventView(event.id, event.createdAt, ZQuery.foreachPar(event.participants)(getPerson)))
+        .map(event => EventView(event.id, event.createdAt, getPersons(event.participants)))
 
     }
 
     def getEvents(ids: List[EventId]): MyQuery[List[EventView]] = {
-      ZQuery.fromEffect(DBService.EventServiceImpl.getEvents(ids)).map(_.map(event => EventView(event.id, event.createdAt, ZQuery.foreachPar(event.participants)(getPerson))))
+      ZQuery
+        .fromEffect(DBService.EventServiceImpl.getEvents(ids))
+        .map(_.map(event => EventView(event.id, event.createdAt, getPersons(event.participants))))
     }
 
     Queries(
@@ -85,11 +83,11 @@ Checklist:
 2. Sum type - DONE.
 3. batching
 4. deduplicate queries
-5. query only selected fields
-6. learn to how write schemas by hand.
+5. query only selected fields from DB - need additional effort to implement it.
+6. learn how to write schemas by hand - NOW
 7. generate case classes from existing graphql schema.
 8. union type as input - need to try to define our scalar.
-9. subscriptions
+9.  subscriptions.
 10. mutations.
 11. integrate with DB, like postgres or something.
 12. handle authorization.
@@ -99,4 +97,14 @@ Checklist:
 16. join graphql queries definitions.(semigroup)
 17. Error handling, schema error/resolving error.
 18. Unit test?
+
+
+
+Data will be:
+* We need 3 level nesting
+* We need 2 entities that has foreign key to the same resource
+* we sum type.
+* we need sum type as input argument.
+* we need users? with role based authorization
+
  */
